@@ -34,8 +34,8 @@ async def forecast_sales(file: UploadFile = File(...), model_type: str = "Prophe
         # coerce sales to numeric and fill/clip negative
         df_raw['sales'] = pd.to_numeric(df_raw['sales'], errors='coerce')
         # if there are still NaNs after coercion, forward-fill then backfill
-        df_raw['sales'].fillna(method='ffill', inplace=True)
-        df_raw['sales'].fillna(method='bfill', inplace=True)
+        df_raw['sales'] = df_raw['sales'].ffill()
+        df_raw['sales'] = df_raw['sales'].bfill()
 
         # Convert 'date' column immediately so resampling works correctly
         df_raw['date'] = pd.to_datetime(df_raw['date'])
@@ -46,7 +46,7 @@ async def forecast_sales(file: UploadFile = File(...), model_type: str = "Prophe
             # sum sales by week (using Monday as the week start)
             df_resampled = df_raw.set_index('date').resample('W-MON')['sales'].sum().reset_index()
         elif timeframe == 'Monthly':
-            df_resampled = df_raw.set_index('date').resample('M')['sales'].sum().reset_index()
+            df_resampled = df_raw.set_index('date').resample('ME')['sales'].sum().reset_index()
         else:
             df_resampled = df_raw.copy()
 
@@ -95,7 +95,7 @@ async def forecast_sales(file: UploadFile = File(...), model_type: str = "Prophe
         merged['error'] = merged['y'] - merged['yhat']
         rmse_val = float((merged['error'] ** 2).mean() ** 0.5)
         # filter zeros to prevent infinite MAPE
-        nonzero = merged['y'] != 0
+        nonzero = pd.Series(merged['y'] != 0)
         if nonzero.any():
             mape_val = float((merged.loc[nonzero, 'error'].abs() / merged.loc[nonzero, 'y']).mean() * 100)
         else:

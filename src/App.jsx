@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import DataImport from './components/DataImport';
 import Controls from './components/Controls';
 import ForecastChart from './components/ForecastChart';
 import AIInsights from './components/AIInsights';
+import HomePage from './components/HomePage';
 
 // The URL where the FastAPI backend will be running
 const API_URL = 'http://127.0.0.1:8000/api/forecast';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home');
   const [rawFile, setRawFile] = useState(null);
   const [selectedModel, setSelectedModel] = useState('Prophet'); // Defaulting to the real one
   const [selectedTimeframe, setSelectedTimeframe] = useState('Daily');
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('app-theme') || 'dark';
+  });
   
   const [chartData, setChartData] = useState([]);
   const [realInsight, setRealInsight] = useState('');
   const [metrics, setMetrics] = useState({ rmse: null, mape: null });
   const [isPredicting, setIsPredicting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Apply theme to document element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('app-theme', theme);
+  }, [theme]);
 
   // Trigger backend prediction whenever file, model, or timeframe changes
   useEffect(() => {
@@ -73,13 +84,22 @@ function App() {
     setRawFile(file);
   };
 
-  return (
+  return currentPage === 'home' ? (
+    <HomePage onStart={() => setCurrentPage('dashboard')} />
+  ) : (
     <div className="app-container">
       <aside className="sidebar">
         <div>
           <h1 className="heading-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.5rem', margin: '0' }}>
             <Activity color="var(--primary-color)" /> ระบบคาดการณ์ยอดขาย
           </h1>
+          <button
+            className="btn btn-outline"
+            onClick={() => setCurrentPage('home')}
+            style={{ marginTop: '0.75rem', fontSize: '0.8rem', padding: '0.4rem 0.9rem', gap: '0.4rem' }}
+          >
+            ← หน้าหลัก
+          </button>
         </div>
 
         <Controls 
@@ -93,6 +113,7 @@ function App() {
         />
 
       </aside>
+
 
       <main className="main-content">
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -108,8 +129,16 @@ function App() {
             <strong>ข้อผิดพลาด:</strong> {errorMsg}
           </div>
         )}
-          <div>
-            <h2 style={{ fontSize: '1.8rem', margin: '0 0 0.25rem 0' }}>แดชบอร์ดคาดการณ์ยอดขาย</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <h2 style={{ fontSize: '1.8rem', margin: '0' }}>แดชบอร์ดคาดการณ์ยอดขาย</h2>
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="btn btn-outline"
+              style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title={theme === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
           </div>
         </header>
 
